@@ -1,0 +1,24 @@
+# Recorded state for the lab: what driftgate believes exists.
+# Nodes not listed here (sw1) are outside the model: drift class E, never written.
+
+[nodes.edge-sc]
+netns = "dg-sc"
+frr_pathspace = "sc"
+container = "clab-driftgate-edge-sc"
+
+[nodes.edge-cust]
+netns = "dg-cust"
+frr_pathspace = "cust"
+container = "clab-driftgate-edge-cust"
+
+[nodes.filter]
+netns = "dg-filter"
+container = "clab-driftgate-filter"
+
+[assets.cust-1]
+prefix = "198.51.100.0/24"
+scrubbing_node = "edge-sc"
+tunnel_if = "gre-cust"
+peer = "172.16.0.2"
+peer_as = 65002
+filter_node = "filter"

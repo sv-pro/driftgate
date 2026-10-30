@@ -1,0 +1,1 @@
+{"nftables": [{"metainfo": {"version": "1.0.9", "release_name": "Old Doc Yak #3", "json_schema_version": 1}}, {"table": {"family": "inet", "name": "dg", "handle": 1}}, {"chain": {"family": "inet", "table": "dg", "name": "forward", "handle": 1, "type": "filter", "hook": "forward", "prio": 0, "policy": "accept"}}]}

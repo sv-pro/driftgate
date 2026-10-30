@@ -1,0 +1,55 @@
+# containerlab version of the lab. NOT YET VERIFIED: it was written alongside the netns lab
+# (lab/netns/lab.sh), which is the one tested. Same addresses, same FRR configs.
+#   sudo containerlab deploy -t lab/clab/driftgate.clab.yml
+#   driftgate --backend docker audit
+# GRE needs the ip_gre module on the host.
+name: driftgate
+
+topology:
+  nodes:
+    edge-sc:
+      kind: linux
+      image: quay.io/frrouting/frr:8.4.0
+      binds:
+        - ../netns/configs/sc.conf:/etc/frr/frr.conf
+        - daemons:/etc/frr/daemons
+      exec:
+        - ip addr add 10.255.0.1/32 dev lo
+        - ip addr add 10.0.0.1/30 dev eth1
+        - ip addr add 10.0.1.1/30 dev eth2
+        - ip tunnel add gre-cust mode gre local 10.0.0.1 remote 10.0.0.2 ttl 64
+        - ip addr add 172.16.0.1/30 dev gre-cust
+        - ip link set gre-cust up
+    edge-cust:
+      kind: linux
+      image: quay.io/frrouting/frr:8.4.0
+      binds:
+        - ../netns/configs/cust.conf:/etc/frr/frr.conf
+        - daemons:/etc/frr/daemons
+      exec:
+        - ip addr add 10.255.0.2/32 dev lo
+        - ip addr add 10.0.0.2/30 dev eth1
+        - ip tunnel add gre-sc mode gre local 10.0.0.2 remote 10.0.0.1 ttl 64
+        - ip addr add 172.16.0.2/30 dev gre-sc
+        - ip link set gre-sc up
+    filter:
+      kind: linux
+      image: alpine:3.20
+      binds:
+        - ../netns/configs/filter.nft:/etc/driftgate/filter.nft
+      exec:
+        - apk add --no-cache nftables iproute2
+        - ip addr add 10.0.1.2/30 dev eth1
+        - ip addr add 10.0.2.1/30 dev eth2
+        - sysctl -w net.ipv4.ip_forward=1
+        - nft -f /etc/driftgate/filter.nft
+    sw1:                    # outside driftgate's model (drift class E)
+      kind: linux
+      image: alpine:3.20
+      exec:
+        - ip addr add 10.0.2.2/30 dev eth1
+
+  links:
+    - endpoints: ["edge-cust:eth1", "edge-sc:eth1"]
+    - endpoints: ["edge-sc:eth2", "filter:eth1"]
+    - endpoints: ["filter:eth2", "sw1:eth1"]

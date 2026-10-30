@@ -1,0 +1,62 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q            # the live lab test skips here (not root, no lab)
+
+  lab:
+    # Builds the real netns lab with FRRouting and audits it. New in M1: if this job fails
+    # on the runner kernel, that is a finding about the lab, not about the code under test.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update -q && sudo apt-get install -y -q frr nftables
+      - run: python -m venv .venv && .venv/bin/pip install -q -e ".[dev]"
+      - name: lab up (GRE if the kernel has it, else VXLAN)
+        run: |
+          if sudo modprobe ip_gre; then T=gre; else T=vxlan; fi
+          echo "tunnel: $T"
+          sudo DG_TUNNEL=$T lab/netns/lab.sh up --ttl 20m
+          sleep 15
+          sudo lab/netns/lab.sh status
+      - run: sudo .venv/bin/driftgate audit
+      - run: sudo .venv/bin/pytest -q -m lab
+      - if: always()
+        run: sudo lab/netns/lab.sh down
+
+  forbidden-terms:
+    # Fails if any tracked file contains a term from the FORBIDDEN_TERMS secret
+    # (one term per line, case-insensitive). The list itself is never committed.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          TERMS: ${{ secrets.FORBIDDEN_TERMS }}
+        run: |
+          if [ -z "$TERMS" ]; then
+            echo "::warning::FORBIDDEN_TERMS secret is not set; check skipped"; exit 0
+          fi
+          printf '%s\n' "$TERMS" | sed '/^[[:space:]]*$/d' > /tmp/terms
+          # Print file:line only, never the matching text: the log is public, the terms are not.
+          hits="$(git grep -n -i -F -f /tmp/terms -- . | cut -d: -f1,2 || true)"
+          if [ -n "$hits" ]; then
+            echo "$hits"; echo "::error::forbidden terms found at the locations above"; exit 1
+          fi
+          n="$(git log --format='%an %ae %s%n%b' | grep -c -i -F -f /tmp/terms || true)"
+          if [ "$n" != "0" ]; then echo "::error::forbidden terms in $n commit-metadata lines"; exit 1; fi
+          echo "clean"

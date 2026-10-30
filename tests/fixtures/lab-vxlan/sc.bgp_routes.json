@@ -1,0 +1,10 @@
+{
+ "vrfId": 0,
+ "vrfName": "default",
+ "tableVersion": 2,
+ "routerId": "10.255.0.1",
+ "defaultLocPrf": 100,
+ "localAS": 65001,
+ "routes": { "10.255.0.1/32": [{"valid":true,"bestpath":true,"selectionReason":"First path received","pathFrom":"external","prefix":"10.255.0.1","prefixLen":32,"network":"10.255.0.1/32","version":1,"metric":0,"weight":32768,"peerId":"(unspec)","path":"","origin":"IGP","nexthops":[{"ip":"0.0.0.0","hostname":"edge-sc","afi":"ipv4","used":true}]}]
+,"198.51.100.0/24": [{"valid":true,"bestpath":true,"selectionReason":"First path received","pathFrom":"external","prefix":"198.51.100.0","prefixLen":24,"network":"198.51.100.0/24","version":2,"metric":0,"weight":0,"peerId":"172.16.0.2","path":"65002","origin":"IGP","nexthops":[{"ip":"172.16.0.2","hostname":"edge-cust","afi":"ipv4","used":true}]}]
+ }  } 
