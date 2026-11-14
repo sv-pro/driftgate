@@ -17,5 +17,5 @@ FRRouting, nftables). The pattern is general.
 - [SCOPE.md](SCOPE.md) — the one-page scope of v1: state layers, drift classes, invariants,
   lab, evaluation scenarios, milestones.
 
-Related: [ai2rules](https://github.com/sv-pro/ai2rules) — deterministic execution governance
+Related: [ai2rules](https://ai2rules.dev/kernel/) — deterministic execution governance
 for agents (what an agent can do). driftgate adds the other half: what it may act on.
